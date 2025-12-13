@@ -1,12 +1,13 @@
+
 {
   "domain": "notifheure",
-  "name": "Notifheure",
-  "documentation": "https://github.com/ton-github/notifheure",
-  "issue_tracker": "https://github.com/ton-github/notifheure/issues",
-  "version": "1.0.1",
+  "name": "NotifHeure",
+  "version": "1.0.0",
+  "documentation": "https://github.com/WadohS/hacs-NotifHeure#readme",
+  "issue_tracker": "https://github.com/WadohS/hacs-NotifHeure/issues",
   "dependencies": ["mqtt"],
-  "codeowners": ["@ton-github"],
+  "codeowners": ["@WadohS"],
   "requirements": [],
   "iot_class": "local_push",
-  "integration_type": "device"
+  "integration_type": "config_flow"  // ← CORRECTION : était "service"
 }
