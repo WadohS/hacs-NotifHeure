@@ -1,12 +1,12 @@
 {
- "domain": "notifheure",
- "name": "Notifheure",
- "documentation": "https://github.com/ton-github/notifheure",
- "issue_tracker": "https://github.com/ton-github/notifheure/issues",
- "version": "1.0.0",
- "dependencies": ["mqtt"],
- "codeowners": ["@ton-github"],
- "requirements": [],
- "iot_class": "local_push",
- "integration_type": "service"
+  "domain": "notifheure",
+  "name": "Notifheure",
+  "documentation": "https://github.com/ton-github/notifheure",
+  "issue_tracker": "https://github.com/ton-github/notifheure/issues",
+  "version": "1.0.1",
+  "dependencies": ["mqtt"],
+  "codeowners": ["@ton-github"],
+  "requirements": [],
+  "iot_class": "local_push",
+  "integration_type": "device"
 }
