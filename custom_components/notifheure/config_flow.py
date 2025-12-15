@@ -1,214 +1,190 @@
 """Config flow for Notifheure integration."""
-from __future__ import annotations
-
 import logging
-from typing import Any
-
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
-
-from .const import CONF_PANEL_NAME, CONF_PANEL_TOPIC, CONF_PANELS, DOMAIN
+from .const import DOMAIN, CONF_PANELS, CONF_PANEL_NAME, CONF_PANEL_TOPIC
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class NotifheureConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Notifheure."""
+    """Gère le flux de configuration Notifheure."""
 
     VERSION = 1
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle the initial step."""
+    async def async_step_user(self, user_input=None):
+        """Étape de configuration initiale."""
         _LOGGER.warning("🟢 Config flow: Étape user appelée")
-        
-        try:
-            if self._async_current_entries():
-                _LOGGER.warning("🟡 Config flow: Instance déjà existante")
-                return self.async_abort(reason="single_instance_allowed")
 
-            if user_input is not None:
-                _LOGGER.warning("🟢 Config flow: Création de l'entrée")
-                return self.async_create_entry(
-                    title="Notifheure",
-                    data={},
-                    options={CONF_PANELS: []},
-                )
+        # Une seule instance autorisée
+        if self._async_current_entries():
+            _LOGGER.warning("🟡 Config flow: Instance déjà existante, abandon")
+            return self.async_abort(reason="single_instance_allowed")
 
-            _LOGGER.warning("🟢 Config flow: Affichage du formulaire initial")
-            return self.async_show_form(
-                step_id="user",
-                data_schema=vol.Schema({}),
+        if user_input is not None:
+            _LOGGER.warning("🟢 Config flow: Création de l'entrée")
+            return self.async_create_entry(
+                title="Notifheure",
+                data={},
+                options={CONF_PANELS: []}
             )
-            
-        except Exception as err:
-            _LOGGER.error("🔴 Config flow erreur user: %s", err, exc_info=True)
-            raise
+
+        _LOGGER.warning("🟢 Config flow: Affichage du formulaire initial")
+        return self.async_show_form(
+            step_id="user",
+            description_placeholders={
+                "name": "Notifheure Configuration"
+            }
+        )
 
     @staticmethod
     @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> NotifheureOptionsFlowHandler:
-        """Get the options flow for this handler."""
+    def async_get_options_flow(config_entry):
+        """Retourne le gestionnaire d'options."""
+        _LOGGER.warning("🟢 Options flow: Création du gestionnaire")
         return NotifheureOptionsFlowHandler(config_entry)
 
 
 class NotifheureOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle Notifheure options."""
+    """Gère les options de Notifheure - VERSION CORRIGÉE."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        _LOGGER.warning("🟢 Options flow: Initialisation")
+    def __init__(self, config_entry):
+        """Initialise le gestionnaire d'options."""
+        _LOGGER.warning("🟢 Options: Initialisation")
+        # ✅ CORRECTION: Ne PAS définir self.config_entry (propriété read-only)
+        # On utilise un attribut privé au lieu de modifier la propriété read-only
+        self._config_entry = config_entry
+        _LOGGER.warning(f"🟢 Options: Entry ID = {config_entry.entry_id}")
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Manage the options."""
-        _LOGGER.warning("🟢 Options flow: Étape init")
+    async def async_step_init(self, user_input=None):
+        """Gère l'étape initiale des options."""
+        _LOGGER.warning("🟢 Options flow: Étape init appelée")
+        return await self.async_step_manage_panels()
+
+    async def async_step_manage_panels(self, user_input=None):
+        """Gère l'ajout et la suppression de panneaux."""
+        _LOGGER.warning("🟢 Options flow: Étape manage_panels appelée")
         
-        try:
-            return self.async_show_menu(
-                step_id="init",
-                menu_options=["add_panel", "list_panels", "remove_panel"],
-            )
-        except Exception as err:
-            _LOGGER.error("🔴 Options flow erreur init: %s", err, exc_info=True)
-            raise
+        panels = self._config_entry.options.get(CONF_PANELS, [])
+        _LOGGER.warning(f"🟢 Options flow: {len(panels)} panneau(x) existant(s)")
 
-    async def async_step_add_panel(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Add a new panel."""
-        _LOGGER.warning("🟢 Options flow: Étape add_panel")
+        if user_input is not None:
+            _LOGGER.warning("🟢 Options flow: Traitement du choix utilisateur")
+            
+            if user_input.get("action") == "add":
+                _LOGGER.warning("🟢 Options flow: Redirection vers add_panel")
+                return await self.async_step_add_panel()
+            
+            elif user_input.get("action") == "remove":
+                _LOGGER.warning("🟢 Options flow: Redirection vers remove_panel")
+                return await self.async_step_remove_panel()
+            
+            elif user_input.get("action") == "done":
+                _LOGGER.warning("🟢 Options flow: Configuration terminée")
+                return self.async_create_entry(title="", data=self._config_entry.options)
+
+        # Menu de gestion des panneaux
+        _LOGGER.warning("🟢 Options flow: Affichage du menu de gestion")
+        return self.async_show_form(
+            step_id="manage_panels",
+            data_schema=vol.Schema({
+                vol.Required("action", default="add"): vol.In({
+                    "add": "➕ Ajouter un panneau",
+                    "remove": "🗑️ Supprimer un panneau",
+                    "done": "✅ Terminer"
+                })
+            }),
+            description_placeholders={
+                "panels_count": str(len(panels)),
+                "panels_list": ", ".join([p[CONF_PANEL_NAME] for p in panels]) or "Aucun panneau"
+            }
+        )
+
+    async def async_step_add_panel(self, user_input=None):
+        """Ajoute un nouveau panneau."""
+        _LOGGER.warning("🟢 Options flow: Étape add_panel appelée")
         
-        errors = {}
-
-        try:
-            if user_input is not None:
-                _LOGGER.warning("🟢 Options flow: Traitement input: %s", user_input)
-                
-                name = str(user_input.get(CONF_PANEL_NAME, "")).strip()
-                topic = str(user_input.get(CONF_PANEL_TOPIC, "")).strip()
-                
-                if not name or not topic:
-                    _LOGGER.error("🔴 Options flow: Champs vides")
-                    errors["base"] = "invalid_input"
-                else:
-                    panels = list(self.config_entry.options.get(CONF_PANELS, []))
-                    
-                    # Vérifier si le nom existe déjà
-                    if any(p.get(CONF_PANEL_NAME) == name for p in panels):
-                        _LOGGER.warning("🟡 Options flow: Nom déjà existant")
-                        errors[CONF_PANEL_NAME] = "name_exists"
-                    else:
-                        new_panel = {
-                            CONF_PANEL_NAME: name,
-                            CONF_PANEL_TOPIC: topic,
-                        }
-                        panels.append(new_panel)
-                        
-                        _LOGGER.warning("🟢 Ajout du panneau: %s -> %s", name, topic)
-                        
-                        return self.async_create_entry(title="", data={CONF_PANELS: panels})
-
-            # Afficher le formulaire
-            _LOGGER.warning("🟢 Options flow: Affichage formulaire add_panel")
-            return self.async_show_form(
-                step_id="add_panel",
-                data_schema=vol.Schema(
-                    {
+        if user_input is not None:
+            _LOGGER.warning(f"🟢 Options flow: Ajout du panneau '{user_input[CONF_PANEL_NAME]}'")
+            
+            panels = list(self._config_entry.options.get(CONF_PANELS, []))
+            
+            # Vérifie si le panneau existe déjà
+            if any(p[CONF_PANEL_NAME] == user_input[CONF_PANEL_NAME] for p in panels):
+                _LOGGER.warning(f"🟡 Options flow: Panneau '{user_input[CONF_PANEL_NAME]}' existe déjà")
+                return self.async_show_form(
+                    step_id="add_panel",
+                    data_schema=vol.Schema({
                         vol.Required(CONF_PANEL_NAME, default=""): str,
-                        vol.Required(CONF_PANEL_TOPIC, default=""): str,
-                    }
-                ),
-                errors=errors,
+                        vol.Required(CONF_PANEL_TOPIC, default="notifheure/"): str,
+                    }),
+                    errors={"base": "panel_exists"}
+                )
+            
+            # Ajoute le nouveau panneau
+            panels.append({
+                CONF_PANEL_NAME: user_input[CONF_PANEL_NAME],
+                CONF_PANEL_TOPIC: user_input[CONF_PANEL_TOPIC]
+            })
+            
+            _LOGGER.warning(f"🟢 Options flow: Panneau ajouté, total = {len(panels)}")
+            
+            # Sauvegarde les options
+            new_options = {**self._config_entry.options, CONF_PANELS: panels}
+            self.hass.config_entries.async_update_entry(
+                self._config_entry, options=new_options
             )
             
-        except Exception as err:
-            _LOGGER.error("🔴 Options flow erreur add_panel: %s", err, exc_info=True)
-            raise
+            _LOGGER.warning("🟢 Options flow: Retour au menu de gestion")
+            return await self.async_step_manage_panels()
 
-    async def async_step_list_panels(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """List all configured panels."""
-        _LOGGER.warning("🟢 Options flow: Étape list_panels")
+        # Affiche le formulaire d'ajout
+        _LOGGER.warning("🟢 Options flow: Affichage du formulaire d'ajout")
+        return self.async_show_form(
+            step_id="add_panel",
+            data_schema=vol.Schema({
+                vol.Required(CONF_PANEL_NAME, default=""): str,
+                vol.Required(CONF_PANEL_TOPIC, default="notifheure/"): str,
+            }),
+            description_placeholders={
+                "example_name": "salon",
+                "example_topic": "notifheure/salon"
+            }
+        )
+
+    async def async_step_remove_panel(self, user_input=None):
+        """Supprime un panneau existant."""
+        _LOGGER.warning("🟢 Options flow: Étape remove_panel appelée")
         
-        try:
-            panels = list(self.config_entry.options.get(CONF_PANELS, []))
-
-            if not panels:
-                _LOGGER.warning("🟡 Options flow: Aucun panneau")
-                return self.async_abort(reason="no_panels")
-
-            panel_list = "\n".join(
-                f"• {p.get(CONF_PANEL_NAME, 'unknown')}: {p.get(CONF_PANEL_TOPIC, 'unknown')}" 
-                for p in panels
-            )
-            
-            _LOGGER.warning("🟢 Options flow: Liste des panneaux:\n%s", panel_list)
-
-            return self.async_show_form(
-                step_id="list_panels",
-                data_schema=vol.Schema({}),
-                description_placeholders={"panels": panel_list},
-            )
-            
-        except Exception as err:
-            _LOGGER.error("🔴 Options flow erreur list_panels: %s", err, exc_info=True)
-            raise
-
-    async def async_step_remove_panel(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Remove a panel."""
-        _LOGGER.warning("🟢 Options flow: Étape remove_panel")
+        panels = list(self._config_entry.options.get(CONF_PANELS, []))
         
-        try:
-            panels = list(self.config_entry.options.get(CONF_PANELS, []))
-
-            if not panels:
-                _LOGGER.warning("🟡 Options flow: Aucun panneau à supprimer")
-                return self.async_abort(reason="no_panels")
-
-            if user_input is not None:
-                _LOGGER.warning("🟢 Options flow: Suppression input: %s", user_input)
-                
-                index = int(user_input.get("panel_index", -1))
-                
-                if 0 <= index < len(panels):
-                    removed_panel = panels[index]
-                    panels = panels[:index] + panels[index + 1:]
-                    
-                    _LOGGER.warning("🟢 Suppression du panneau: %s", removed_panel.get(CONF_PANEL_NAME))
-                    
-                    return self.async_create_entry(title="", data={CONF_PANELS: panels})
-                else:
-                    _LOGGER.error("🔴 Options flow: Index invalide")
-                    return self.async_abort(reason="invalid_index")
-
-            # Créer les options
-            panel_options = {}
-            for i, p in enumerate(panels):
-                panel_options[str(i)] = f"{p.get(CONF_PANEL_NAME, 'unknown')} ({p.get(CONF_PANEL_TOPIC, 'unknown')})"
+        if not panels:
+            _LOGGER.warning("🟡 Options flow: Aucun panneau à supprimer")
+            return await self.async_step_manage_panels()
+        
+        if user_input is not None:
+            _LOGGER.warning(f"🟢 Options flow: Suppression du panneau '{user_input['panel_to_remove']}'")
             
-            _LOGGER.warning("🟢 Options flow: Affichage formulaire remove avec %d options", len(panel_options))
-
-            return self.async_show_form(
-                step_id="remove_panel",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required("panel_index"): vol.In(panel_options),
-                    }
-                ),
+            # Supprime le panneau
+            panels = [p for p in panels if p[CONF_PANEL_NAME] != user_input["panel_to_remove"]]
+            
+            _LOGGER.warning(f"🟢 Options flow: Panneau supprimé, reste = {len(panels)}")
+            
+            # Sauvegarde les options
+            new_options = {**self._config_entry.options, CONF_PANELS: panels}
+            self.hass.config_entries.async_update_entry(
+                self._config_entry, options=new_options
             )
             
-        except Exception as err:
-            _LOGGER.error("🔴 Options flow erreur remove_panel: %s", err, exc_info=True)
-            raise
+            return await self.async_step_manage_panels()
+
+        # Affiche le formulaire de suppression
+        _LOGGER.warning("🟢 Options flow: Affichage du formulaire de suppression")
+        panel_choices = {p[CONF_PANEL_NAME]: p[CONF_PANEL_NAME] for p in panels}
+        
+        return self.async_show_form(
+            step_id="remove_panel",
+            data_schema=vol.Schema({
+                vol.Required("panel_to_remove"): vol.In(panel_choices)
+            })
+        )
