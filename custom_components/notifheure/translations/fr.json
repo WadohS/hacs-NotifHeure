@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configuration Notifheure",
+        "description": "Configurez vos panneaux LED Notifheure.\nVous pourrez ajouter des panneaux après l'installation."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Une seule instance est autorisée",
+      "no_panels": "Aucun panneau configuré"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "add_panel": "Ajouter un panneau",
+          "list_panels": "Voir les panneaux",
+          "remove_panel": "Supprimer un panneau"
+        }
+      },
+      "add_panel": {
+        "title": "Ajouter un panneau Notifheure",
+        "description": "Configurez un nouveau panneau LED.\n\nExemple:\n• Nom: Salon\n• Topic MQTT: notifheure/salon",
+        "data": {
+          "name": "Nom du panneau",
+          "topic": "Topic MQTT"
+        }
+      },
+      "list_panels": {
+        "title": "Panneaux configurés",
+        "description": "Panneaux actuels:\n\n{panels}"
+      },
+      "remove_panel": {
+        "title": "Supprimer un panneau",
+        "description": "Sélectionnez le panneau à supprimer",
+        "data": {
+          "panel_index": "Panneau"
+        }
+      }
+    },
+    "error": {
+      "name_exists": "Un panneau avec ce nom existe déjà"
+    }
+  }
+}

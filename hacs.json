@@ -1,0 +1,7 @@
+{
+  "name": "Notifheure",
+  "render_readme": true,
+  "domains": ["notify"],
+  "iot_class": "Local Push",
+  "homeassistant": "2023.1.0"
+}
