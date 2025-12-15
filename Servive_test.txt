@@ -1,7 +1,0 @@
-- service: notify.notifheure
- data:
-   target: ["reseau"]
-   message: >
-     Prod {{ states('sensor.solar_production') }} kW
-   data:
-     options: "nzo=0;pause=1"
